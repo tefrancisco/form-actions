@@ -1,6 +1,69 @@
+import { useActionState } from 'react'
+import {
+  isEmail,
+  isNotEmpty,
+  isEqualToOtherValue,
+  hasMinLength
+} from '../util/validation.js'
+
 export default function Signup() {
+  // By using this function as a formAction in the hook, it is operated differently, and we need
+  // to accept the previous state as a parameter, otherwise, there'll be an error.
+  function signupAction(prevFormState, formData) {
+    const email = formData.get('email')
+    const password = formData.get('password')
+    const confirmPassword = formData.get('confirm-password')
+    const firstName = formData.get('first-name')
+    const lastName = formData.get('last-name')
+    const role = formData.get('role')
+    const terms = formData.get('terms')
+    const acquisitionChannel = formData.getAll('acquisition')
+
+    let errors = []
+
+    if (!isEmail(email)) {
+      errors.push('Invalid email address.')
+    }
+
+    if (!isNotEmpty(password) || !hasMinLength(password, 6)) {
+      errors.push('You must provide a password with at least six characters.')
+    }
+
+    if (!isEqualToOtherValue(password, confirmPassword)) {
+      errors.push('Passwords do not match.')
+    }
+
+    if (!isNotEmpty(firstName) || !isNotEmpty(lastName)) {
+      errors.push('Please provide both your first and last name.')
+    }
+
+    if (!isNotEmpty(role)) {
+      errors.push('You must select a role.')
+    }
+
+    if (!terms) {
+      errors.push('You must agree to the terms and conditions to proceed.')
+    }
+
+    if (acquisitionChannel.length === 0) {
+      errors.push('Please select at least one acquisition channel.')
+    }
+
+    if (errors.length > 0) {
+      // Shortchut to errors: errors
+      console.log(errors)
+      return { errors: errors }
+    }
+
+    return { errors: null }
+  }
+
+  // Hook that manages a form related state
+  const [formState, formAction, pending] = useActionState(signupAction, { errors: null })
+
   return (
-    <form>
+    // When passing the function as a action, you get a FormData object right away from it.
+    <form action={formAction}>
       <h2>Welcome on board!</h2>
       <p>We just need a little bit of data from you to get you started 🚀</p>
 
@@ -84,6 +147,14 @@ export default function Signup() {
           agree to the terms and conditions
         </label>
       </div>
+
+      {formState.errors && (
+        <ul className="error">
+          {formState.errors.map((error) => (
+            <li key={error}>{error}</li>
+          ))}
+        </ul>
+      )}
 
       <p className="form-actions">
         <button type="reset" className="button button-flat">
